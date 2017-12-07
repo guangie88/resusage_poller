@@ -17,15 +17,15 @@ use failure::Error;
 use fruently::fluent::Fluent;
 use fruently::forwardable::JsonForwardable;
 use std::thread;
-use std::collections::HashMap;
 use std::time::Duration;
 use structopt::StructOpt;
-use systemstat::{CPULoad, Platform};
+use systemstat::{LoadAverage, Platform};
 use systemstat::platform::PlatformImpl;
 
 #[derive(Debug, Fail)]
 enum FluentError {
-    #[fail(display = "")] InnerFluentError { e: fruently::error::FluentError },
+    #[fail(display = "")]
+    InnerFluentError { e: fruently::error::FluentError },
 }
 
 impl From<fruently::error::FluentError> for FluentError {
@@ -39,8 +39,8 @@ type Result<T> = std::result::Result<T, Error>;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "resup", about = "Resources Usage Poller")]
 struct MainConfig {
-    #[structopt(short = "a", long = "addr",
-                default_value = "127.0.0.1:24224", help = "Fruentd hostname")]
+    #[structopt(short = "a", long = "addr", default_value = "127.0.0.1:24224",
+                help = "Fruentd hostname")]
     addr: String,
 
     #[structopt(short = "t", long = "tag",
@@ -53,41 +53,32 @@ struct MainConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct SerCpuLoad {
-    user: f32,
-    nice: f32,
-    system: f32,
-    interrupt: f32,
-    idle: f32,
+struct SerLoadAverage {
+    one: f32,
+    five: f32,
+    fifteen: f32,
 }
 
-impl SerCpuLoad {
-    fn from_cpu_load(c: &CPULoad) -> SerCpuLoad {
-        SerCpuLoad {
-            user: c.user,
-            nice: c.nice,
-            system: c.system,
-            interrupt: c.interrupt,
-            idle: c.idle,
+impl SerLoadAverage {
+    fn from_load_average(c: &LoadAverage) -> SerLoadAverage {
+        SerLoadAverage {
+            one: c.one,
+            five: c.five,
+            fifteen: c.fifteen,
         }
     }
 }
 
 fn run_impl(platform: &PlatformImpl, addr: &str, tag: &str) -> Result<()> {
     let fluent = Fluent::new(addr, tag);
-    let cpu_loads = &platform.cpu_load()?.done()?;
+    let ser_load_average =
+        SerLoadAverage::from_load_average(&platform.load_average()?);
 
-    let ser_cpu_loads: HashMap<usize, SerCpuLoad> = cpu_loads
-        .into_iter()
-        .enumerate()
-        .map(|(i, cpu_load)| (i, SerCpuLoad::from_cpu_load(cpu_load)))
-        .collect();
+    println!("{:?}", ser_load_average);
 
-    println!("{:?}", ser_cpu_loads);
-
-    fluent
-        .post(&ser_cpu_loads)
-        .map_err(|e| -> FluentError { e.into() })?;
+    fluent.post(&ser_load_average).map_err(|e| -> FluentError {
+        e.into()
+    })?;
 
     Ok(())
 }
