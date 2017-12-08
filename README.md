@@ -41,3 +41,18 @@ Polls for:
 ```
 
 Note the program loops forever until `CTRL-C` is pressed.
+
+## JSON Log Example
+
+```json
+"cpu_loads": {
+    "0": {
+        "user": 0.020408163,
+        "nice": 0,
+        "system": 0.010204081,
+        "interrupt": 0,
+        "idle": 0.96938777
+    },
+    ...
+}
+```

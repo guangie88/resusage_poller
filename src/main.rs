@@ -3,6 +3,8 @@
 #![cfg_attr(feature = "clippy", deny(warnings))]
 
 #[macro_use]
+extern crate derive_new;
+#[macro_use]
 extern crate failure;
 extern crate fruently;
 extern crate serde;
@@ -53,7 +55,7 @@ struct MainConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct SerCpuLoad {
+struct CpuLoadDef {
     user: f32,
     nice: f32,
     system: f32,
@@ -61,9 +63,9 @@ struct SerCpuLoad {
     idle: f32,
 }
 
-impl SerCpuLoad {
-    fn from_cpu_load(c: &CPULoad) -> SerCpuLoad {
-        SerCpuLoad {
+impl CpuLoadDef {
+    fn from_cpu_load(c: &CPULoad) -> CpuLoadDef {
+        CpuLoadDef {
             user: c.user,
             nice: c.nice,
             system: c.system,
@@ -71,6 +73,13 @@ impl SerCpuLoad {
             idle: c.idle,
         }
     }
+}
+
+type CpuLoadDefs = HashMap<usize, CpuLoadDef>;
+
+#[derive(Serialize, Deserialize, Debug, new)]
+struct CpuLoadWrap {
+    cpu_loads: CpuLoadDefs,
 }
 
 fn run_impl(
@@ -85,14 +94,14 @@ fn run_impl(
     thread::sleep(interval);
     let cpu_loads = cpu_loads.done()?;
 
-    let ser_cpu_loads: HashMap<usize, SerCpuLoad> = cpu_loads
+    let cpu_loads: HashMap<usize, CpuLoadDef> = cpu_loads
         .into_iter()
         .enumerate()
-        .map(|(i, cpu_load)| (i, SerCpuLoad::from_cpu_load(&cpu_load)))
+        .map(|(i, cpu_load)| (i, CpuLoadDef::from_cpu_load(&cpu_load)))
         .collect();
 
     Fluent::new(addr, tag)
-        .post(&ser_cpu_loads)
+        .post(&CpuLoadWrap::new(cpu_loads))
         .map_err(|e| -> FluentError { e.into() })?;
 
     Ok(())
