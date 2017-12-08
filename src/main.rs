@@ -41,8 +41,11 @@ type Result<T> = std::result::Result<T, Error>;
 #[structopt(name = "resup", about = "Resources Usage Poller")]
 struct MainConfig {
     #[structopt(short = "a", long = "addr",
-                default_value = "127.0.0.1:24224", help = "Fruentd hostname")]
+                default_value = "127.0.0.1:24224", help = "Fluentd hostname")]
     addr: String,
+
+    #[structopt(long = "off", help = "Turn off Fluentd logging")]
+    fluent_off: bool,
 
     #[structopt(short = "t", long = "tag",
                 help = "Tag to use for Fruentd logging")]
@@ -110,6 +113,7 @@ fn run_impl(
     addr: &str,
     tag: &str,
     interval: Duration,
+    fluent_off: bool,
 ) -> Result<()> {
     let cpu_loads = pf.cpu_load()?;
 
@@ -127,9 +131,11 @@ fn run_impl(
 
     let cpu_load_wrap = CpuLoadWrap::from_cpu_load_defs(cpu_loads);
 
-    Fluent::new(addr, tag)
-        .post(&cpu_load_wrap)
-        .map_err(|e| -> FluentError { e.into() })?;
+    if !fluent_off {
+        Fluent::new(addr, tag)
+            .post(&cpu_load_wrap)
+            .map_err(|e| -> FluentError { e.into() })?;
+    }
 
     if cfg!(debug_assertions) {
         println!("{}", serde_json::to_string_pretty(&cpu_load_wrap)?);
@@ -144,7 +150,13 @@ fn run() -> Result<()> {
     let pf = PlatformImpl::new();
 
     loop {
-        if let Err(e) = run_impl(&pf, &config.addr, &config.tag, interval) {
+        if let Err(e) = run_impl(
+            &pf,
+            &config.addr,
+            &config.tag,
+            interval,
+            config.fluent_off,
+        ) {
             eprintln!("resup run ERROR: {}", e);
         }
     }
