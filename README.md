@@ -47,62 +47,62 @@ Note the program loops forever until `CTRL-C` is pressed.
 ```json
 {
   "count": 6,
-  "avg_busy": 0.16698907,
-  "avg_idle": 0.8330109,
+  "avg_busy_perc": 19.00171,
+  "avg_idle_perc": 80.833275,
   "cpu_loads": {
-    "5": {
-      "index": 5,
-      "user": 0.1010101,
+    "4": {
+      "index": 4,
+      "user": 0.16,
       "nice": 0.0,
-      "system": 0.01010101,
+      "system": 0.01,
       "interrupt": 0.0,
-      "busy": 0.11111111,
-      "idle": 0.8888889
-    },
-    "3": {
-      "index": 3,
-      "user": 0.1632653,
-      "nice": 0.0,
-      "system": 0.010204081,
-      "interrupt": 0.0,
-      "busy": 0.17346938,
-      "idle": 0.82653064
+      "busy": 0.17,
+      "idle": 0.83
     },
     "1": {
       "index": 1,
-      "user": 0.2020202,
+      "user": 0.11881188,
       "nice": 0.0,
-      "system": 0.02020202,
+      "system": 0.01980198,
       "interrupt": 0.0,
-      "busy": 0.22222222,
-      "idle": 0.7777778
+      "busy": 0.13861386,
+      "idle": 0.8613861
     },
     "0": {
       "index": 0,
-      "user": 0.13725491,
+      "user": 0.16190477,
       "nice": 0.0,
-      "system": 0.029411765,
+      "system": 0.028571429,
       "interrupt": 0.0,
-      "busy": 0.16666667,
-      "idle": 0.8333333
+      "busy": 0.1904762,
+      "idle": 0.8095238
+    },
+    "3": {
+      "index": 3,
+      "user": 0.24752475,
+      "nice": 0.0,
+      "system": 0.02970297,
+      "interrupt": 0.0,
+      "busy": 0.27722773,
+      "idle": 0.7128713
     },
     "2": {
       "index": 2,
-      "user": 0.1388889,
+      "user": 0.15841584,
       "nice": 0.0,
-      "system": 0.055555556,
+      "system": 0.01980198,
       "interrupt": 0.0,
-      "busy": 0.19444445,
-      "idle": 0.8055556
+      "busy": 0.17821781,
+      "idle": 0.8217822
     },
-    "4": {
-      "index": 4,
-      "user": 0.13402061,
+    "5": {
+      "index": 5,
+      "user": 0.16494845,
       "nice": 0.0,
-      "system": 0.0,
+      "system": 0.020618556,
       "interrupt": 0.0,
-      "busy": 0.13402061,
-      "idle": 0.8659794
+      "busy": 0.185567,
+      "idle": 0.814433
     }
   }
 }

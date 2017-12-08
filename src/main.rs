@@ -83,8 +83,8 @@ type FlattenedCpuLoads = HashMap<usize, FlattenedCpuLoad>;
 #[derive(Serialize, Deserialize, Debug)]
 struct CpuLoadWrap {
     count: usize,
-    avg_busy: f32,
-    avg_idle: f32,
+    avg_busy_perc: f32,
+    avg_idle_perc: f32,
     cpu_loads: FlattenedCpuLoads,
 }
 
@@ -92,10 +92,14 @@ impl CpuLoadWrap {
     fn from_cpu_load_defs(cpu_load_defs: FlattenedCpuLoads) -> CpuLoadWrap {
         CpuLoadWrap {
             count: cpu_load_defs.len(),
-            avg_busy: cpu_load_defs.values().fold(0.0, |acc, c| acc + c.busy)
-                / cpu_load_defs.len() as f32,
-            avg_idle: cpu_load_defs.values().fold(0.0, |acc, c| acc + c.idle)
-                / cpu_load_defs.len() as f32,
+            avg_busy_perc: cpu_load_defs
+                .values()
+                .fold(0.0, |acc, c| acc + c.busy)
+                / cpu_load_defs.len() as f32 * 100.0,
+            avg_idle_perc: cpu_load_defs
+                .values()
+                .fold(0.0, |acc, c| acc + c.idle)
+                / cpu_load_defs.len() as f32 * 100.0,
             cpu_loads: cpu_load_defs,
         }
     }
