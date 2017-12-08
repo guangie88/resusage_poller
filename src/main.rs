@@ -3,13 +3,12 @@
 #![cfg_attr(feature = "clippy", deny(warnings))]
 
 #[macro_use]
-extern crate derive_new;
-#[macro_use]
 extern crate failure;
 extern crate fruently;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
@@ -18,8 +17,8 @@ extern crate systemstat;
 use failure::Error;
 use fruently::fluent::Fluent;
 use fruently::forwardable::JsonForwardable;
-use std::thread;
 use std::collections::HashMap;
+use std::thread;
 use std::time::Duration;
 use structopt::StructOpt;
 use systemstat::{CPULoad, Platform};
@@ -55,31 +54,51 @@ struct MainConfig {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CpuLoadDef {
+struct FlattenedCpuLoad {
+    index: usize,
     user: f32,
     nice: f32,
     system: f32,
     interrupt: f32,
+    busy: f32,
     idle: f32,
 }
 
-impl CpuLoadDef {
-    fn from_cpu_load(c: &CPULoad) -> CpuLoadDef {
-        CpuLoadDef {
+impl FlattenedCpuLoad {
+    fn from_cpu_load_with_index(index: usize, c: &CPULoad) -> FlattenedCpuLoad {
+        FlattenedCpuLoad {
+            index: index,
             user: c.user,
             nice: c.nice,
             system: c.system,
             interrupt: c.interrupt,
+            busy: c.user + c.nice + c.system,
             idle: c.idle,
         }
     }
 }
 
-type CpuLoadDefs = HashMap<usize, CpuLoadDef>;
+type FlattenedCpuLoads = HashMap<usize, FlattenedCpuLoad>;
 
-#[derive(Serialize, Deserialize, Debug, new)]
+#[derive(Serialize, Deserialize, Debug)]
 struct CpuLoadWrap {
-    cpu_loads: CpuLoadDefs,
+    count: usize,
+    avg_busy: f32,
+    avg_idle: f32,
+    cpu_loads: FlattenedCpuLoads,
+}
+
+impl CpuLoadWrap {
+    fn from_cpu_load_defs(cpu_load_defs: FlattenedCpuLoads) -> CpuLoadWrap {
+        CpuLoadWrap {
+            count: cpu_load_defs.len(),
+            avg_busy: cpu_load_defs.values().fold(0.0, |acc, c| acc + c.busy)
+                / cpu_load_defs.len() as f32,
+            avg_idle: cpu_load_defs.values().fold(0.0, |acc, c| acc + c.idle)
+                / cpu_load_defs.len() as f32,
+            cpu_loads: cpu_load_defs,
+        }
+    }
 }
 
 fn run_impl(
@@ -94,15 +113,23 @@ fn run_impl(
     thread::sleep(interval);
     let cpu_loads = cpu_loads.done()?;
 
-    let cpu_loads: HashMap<usize, CpuLoadDef> = cpu_loads
+    let cpu_loads: HashMap<usize, FlattenedCpuLoad> = cpu_loads
         .into_iter()
         .enumerate()
-        .map(|(i, cpu_load)| (i, CpuLoadDef::from_cpu_load(&cpu_load)))
+        .map(|(i, cpu_load)| {
+            (i, FlattenedCpuLoad::from_cpu_load_with_index(i, &cpu_load))
+        })
         .collect();
 
+    let cpu_load_wrap = CpuLoadWrap::from_cpu_load_defs(cpu_loads);
+
     Fluent::new(addr, tag)
-        .post(&CpuLoadWrap::new(cpu_loads))
+        .post(&cpu_load_wrap)
         .map_err(|e| -> FluentError { e.into() })?;
+
+    if cfg!(debug_assertions) {
+        println!("{}", serde_json::to_string_pretty(&cpu_load_wrap)?);
+    }
 
     Ok(())
 }

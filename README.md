@@ -45,14 +45,65 @@ Note the program loops forever until `CTRL-C` is pressed.
 ## JSON Log Example
 
 ```json
-"cpu_loads": {
-    "0": {
-        "user": 0.020408163,
-        "nice": 0,
-        "system": 0.010204081,
-        "interrupt": 0,
-        "idle": 0.96938777
+{
+  "count": 6,
+  "avg_busy": 0.16698907,
+  "avg_idle": 0.8330109,
+  "cpu_loads": {
+    "5": {
+      "index": 5,
+      "user": 0.1010101,
+      "nice": 0.0,
+      "system": 0.01010101,
+      "interrupt": 0.0,
+      "busy": 0.11111111,
+      "idle": 0.8888889
     },
-    ...
+    "3": {
+      "index": 3,
+      "user": 0.1632653,
+      "nice": 0.0,
+      "system": 0.010204081,
+      "interrupt": 0.0,
+      "busy": 0.17346938,
+      "idle": 0.82653064
+    },
+    "1": {
+      "index": 1,
+      "user": 0.2020202,
+      "nice": 0.0,
+      "system": 0.02020202,
+      "interrupt": 0.0,
+      "busy": 0.22222222,
+      "idle": 0.7777778
+    },
+    "0": {
+      "index": 0,
+      "user": 0.13725491,
+      "nice": 0.0,
+      "system": 0.029411765,
+      "interrupt": 0.0,
+      "busy": 0.16666667,
+      "idle": 0.8333333
+    },
+    "2": {
+      "index": 2,
+      "user": 0.1388889,
+      "nice": 0.0,
+      "system": 0.055555556,
+      "interrupt": 0.0,
+      "busy": 0.19444445,
+      "idle": 0.8055556
+    },
+    "4": {
+      "index": 4,
+      "user": 0.13402061,
+      "nice": 0.0,
+      "system": 0.0,
+      "interrupt": 0.0,
+      "busy": 0.13402061,
+      "idle": 0.8659794
+    }
+  }
 }
 ```
