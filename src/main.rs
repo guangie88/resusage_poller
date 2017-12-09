@@ -5,6 +5,7 @@
 #[macro_use]
 extern crate failure;
 extern crate fruently;
+extern crate humantime;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -17,16 +18,17 @@ extern crate systemstat;
 use failure::Error;
 use fruently::fluent::Fluent;
 use fruently::forwardable::JsonForwardable;
+use humantime::Duration;
 use std::collections::HashMap;
 use std::thread;
-use std::time::Duration;
 use structopt::StructOpt;
 use systemstat::{CPULoad, Platform};
 use systemstat::platform::PlatformImpl;
 
 #[derive(Debug, Fail)]
 enum FluentError {
-    #[fail(display = "")] InnerFluentError { e: fruently::error::FluentError },
+    #[fail(display = "")]
+    InnerFluentError { e: fruently::error::FluentError },
 }
 
 impl From<fruently::error::FluentError> for FluentError {
@@ -40,8 +42,8 @@ type Result<T> = std::result::Result<T, Error>;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "resup", about = "Resources Usage Poller")]
 struct MainConfig {
-    #[structopt(short = "a", long = "addr",
-                default_value = "127.0.0.1:24224", help = "Fluentd hostname")]
+    #[structopt(short = "a", long = "addr", default_value = "127.0.0.1:24224",
+                help = "Fluentd hostname")]
     addr: String,
 
     #[structopt(long = "off", help = "Turn off Fluentd logging")]
@@ -52,8 +54,8 @@ struct MainConfig {
     tag: String,
 
     #[structopt(parse(try_from_str), short = "i", long = "interval",
-                help = "Interval in seconds")]
-    interval: u64,
+                help = "Interval to get resource usage")]
+    interval: Duration,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -95,14 +97,14 @@ impl CpuLoadWrap {
     fn from_cpu_load_defs(cpu_load_defs: FlattenedCpuLoads) -> CpuLoadWrap {
         CpuLoadWrap {
             count: cpu_load_defs.len(),
-            avg_busy_perc: cpu_load_defs
-                .values()
-                .fold(0.0, |acc, c| acc + c.busy)
-                / cpu_load_defs.len() as f32 * 100.0,
-            avg_idle_perc: cpu_load_defs
-                .values()
-                .fold(0.0, |acc, c| acc + c.idle)
-                / cpu_load_defs.len() as f32 * 100.0,
+            avg_busy_perc: cpu_load_defs.values().fold(
+                0.0,
+                |acc, c| acc + c.busy,
+            ) / cpu_load_defs.len() as f32 * 100.0,
+            avg_idle_perc: cpu_load_defs.values().fold(
+                0.0,
+                |acc, c| acc + c.idle,
+            ) / cpu_load_defs.len() as f32 * 100.0,
             cpu_loads: cpu_load_defs,
         }
     }
@@ -118,7 +120,7 @@ fn run_impl(
     let cpu_loads = pf.cpu_load()?;
 
     // required to sleep before .done() is invoked
-    thread::sleep(interval);
+    thread::sleep(*interval);
     let cpu_loads = cpu_loads.done()?;
 
     let cpu_loads: HashMap<usize, FlattenedCpuLoad> = cpu_loads
@@ -131,14 +133,14 @@ fn run_impl(
 
     let cpu_load_wrap = CpuLoadWrap::from_cpu_load_defs(cpu_loads);
 
-    if !fluent_off {
-        Fluent::new(addr, tag)
-            .post(&cpu_load_wrap)
-            .map_err(|e| -> FluentError { e.into() })?;
-    }
-
     if cfg!(debug_assertions) {
         println!("{}", serde_json::to_string_pretty(&cpu_load_wrap)?);
+    }
+
+    if !fluent_off {
+        Fluent::new(addr, tag).post(&cpu_load_wrap).map_err(
+            |e| -> FluentError { e.into() },
+        )?;
     }
 
     Ok(())
@@ -146,7 +148,6 @@ fn run_impl(
 
 fn run() -> Result<()> {
     let config = MainConfig::from_args();
-    let interval = Duration::from_secs(config.interval);
     let pf = PlatformImpl::new();
 
     loop {
@@ -154,9 +155,10 @@ fn run() -> Result<()> {
             &pf,
             &config.addr,
             &config.tag,
-            interval,
+            config.interval,
             config.fluent_off,
-        ) {
+        )
+        {
             eprintln!("resup run ERROR: {}", e);
         }
     }
