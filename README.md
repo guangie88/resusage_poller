@@ -1,5 +1,7 @@
 # resusage_poller
 
+This is an experimental project.
+
 `Rust` executable to poll for CPU usage (per core) based on parsing of
 `/proc/stat` and logs to `Fluentd` unified logging layer.
 

@@ -27,8 +27,7 @@ use systemstat::platform::PlatformImpl;
 
 #[derive(Debug, Fail)]
 enum FluentError {
-    #[fail(display = "")]
-    InnerFluentError { e: fruently::error::FluentError },
+    #[fail(display = "")] InnerFluentError { e: fruently::error::FluentError },
 }
 
 impl From<fruently::error::FluentError> for FluentError {
@@ -42,8 +41,8 @@ type Result<T> = std::result::Result<T, Error>;
 #[derive(StructOpt, Debug)]
 #[structopt(name = "resup", about = "Resources Usage Poller")]
 struct MainConfig {
-    #[structopt(short = "a", long = "addr", default_value = "127.0.0.1:24224",
-                help = "Fluentd hostname")]
+    #[structopt(short = "a", long = "addr",
+                default_value = "127.0.0.1:24224", help = "Fluentd hostname")]
     addr: String,
 
     #[structopt(long = "off", help = "Turn off Fluentd logging")]
@@ -97,14 +96,14 @@ impl CpuLoadWrap {
     fn from_cpu_load_defs(cpu_load_defs: FlattenedCpuLoads) -> CpuLoadWrap {
         CpuLoadWrap {
             count: cpu_load_defs.len(),
-            avg_busy_perc: cpu_load_defs.values().fold(
-                0.0,
-                |acc, c| acc + c.busy,
-            ) / cpu_load_defs.len() as f32 * 100.0,
-            avg_idle_perc: cpu_load_defs.values().fold(
-                0.0,
-                |acc, c| acc + c.idle,
-            ) / cpu_load_defs.len() as f32 * 100.0,
+            avg_busy_perc: cpu_load_defs
+                .values()
+                .fold(0.0, |acc, c| acc + c.busy)
+                / cpu_load_defs.len() as f32 * 100.0,
+            avg_idle_perc: cpu_load_defs
+                .values()
+                .fold(0.0, |acc, c| acc + c.idle)
+                / cpu_load_defs.len() as f32 * 100.0,
             cpu_loads: cpu_load_defs,
         }
     }
@@ -138,9 +137,9 @@ fn run_impl(
     }
 
     if !fluent_off {
-        Fluent::new(addr, tag).post(&cpu_load_wrap).map_err(
-            |e| -> FluentError { e.into() },
-        )?;
+        Fluent::new(addr, tag)
+            .post(&cpu_load_wrap)
+            .map_err(|e| -> FluentError { e.into() })?;
     }
 
     Ok(())
@@ -157,8 +156,7 @@ fn run() -> Result<()> {
             &config.tag,
             config.interval,
             config.fluent_off,
-        )
-        {
+        ) {
             eprintln!("resup run ERROR: {}", e);
         }
     }
