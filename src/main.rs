@@ -2,7 +2,6 @@
 #![cfg_attr(feature = "clippy", plugin(clippy))]
 #![cfg_attr(feature = "clippy", deny(warnings))]
 
-#[macro_use]
 extern crate failure;
 extern crate fruently;
 extern crate humantime;
@@ -24,17 +23,6 @@ use std::thread;
 use structopt::StructOpt;
 use systemstat::{CPULoad, Platform};
 use systemstat::platform::PlatformImpl;
-
-#[derive(Debug, Fail)]
-enum FluentError {
-    #[fail(display = "")] InnerFluentError { e: fruently::error::FluentError },
-}
-
-impl From<fruently::error::FluentError> for FluentError {
-    fn from(e: fruently::error::FluentError) -> FluentError {
-        FluentError::InnerFluentError { e: e }
-    }
-}
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -137,9 +125,7 @@ fn run_impl(
     }
 
     if !fluent_off {
-        Fluent::new(addr, tag)
-            .post(&cpu_load_wrap)
-            .map_err(|e| -> FluentError { e.into() })?;
+        Fluent::new(addr, tag).post(&cpu_load_wrap)?;
     }
 
     Ok(())
